@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { proposeTeam } from '../../roomActions'
 import { QUEST_SIZES } from '../../avalon'
 import QuestHeader from './QuestHeader'
+import PlayerAvatar from '../../components/PlayerAvatar'
 
 export default function ProposeScreen({ user, room }) {
   const isLeader = room.leader === user.uid
@@ -34,7 +35,7 @@ export default function ProposeScreen({ user, room }) {
       <div className="card">
         <div className="card-title">Leader</div>
         <div className="player-row">
-          <div className="avatar">{leader?.displayName[0].toUpperCase()}</div>
+          <PlayerAvatar player={leader} />
           <div className="player-name">{leader?.displayName}</div>
           {leader?.id === user.uid && <span className="player-badge you">You</span>}
           <span className="player-badge host">👑 Leader</span>
@@ -53,9 +54,7 @@ export default function ProposeScreen({ user, room }) {
               onClick={() => isLeader && toggle(p.id)}
               style={{ cursor: isLeader ? 'pointer' : 'default' }}
             >
-              <div className="avatar" style={selected.includes(p.id) ? { background: 'var(--gold)' } : {}}>
-                {p.displayName[0].toUpperCase()}
-              </div>
+              <PlayerAvatar player={p} style={selected.includes(p.id) ? { background: 'var(--gold)' } : {}} />
               <div className="player-name">{p.displayName}</div>
               {p.id === user.uid && <span className="player-badge you">You</span>}
               {selected.includes(p.id) && <span className="player-badge host">✓ Quest</span>}

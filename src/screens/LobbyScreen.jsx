@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { leaveRoom, startGame } from '../roomActions'
+import { leaveRoom, startGame, setShowLeaderOrder } from '../roomActions'
+import { startWerewolfGame } from '../werewolfActions'
 import { TEAM_SPLIT } from '../avalon'
+import { maxWolves } from '../werewolf'
+import PlayerAvatar from '../components/PlayerAvatar'
 
 const OPTIONAL_ROLES = [
   { id: 'PERCIVAL', label: 'Percival',  team: 'good', desc: 'Sees Merlin + Morgana' },
@@ -9,22 +12,44 @@ const OPTIONAL_ROLES = [
   { id: 'OBERON',   label: 'Oberon',    team: 'evil', desc: 'Unknown to other evil players' },
 ]
 
+const WW_OPTIONAL_ROLES = [
+  { id: 'HUNTER',     icon: '🏹',   label: 'Hunter',     desc: 'When eliminated, takes someone down' },
+  { id: 'WITCH',      icon: '🧙',   label: 'Witch',      desc: 'One save + one poison potion' },
+  { id: 'CUPID',      icon: '💘',   label: 'Cupid',      desc: 'Links two lovers on night 1' },
+  { id: 'WHITE_WOLF', icon: '🤍🐺', label: 'White Wolf', desc: 'Werewolf that appears safe to the Seer' },
+]
+
 export default function LobbyScreen({ user, room, onLeave }) {
   const isHost = room.hostId === user.uid
   const playerCount = room.players.length
+  const gameType = room.gameType || 'avalon'
   const [selectedRoles, setSelectedRoles] = useState([])
+  const [wolfCount, setWolfCount] = useState(null)  // null = use default
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Werewolf player count = all players minus moderator (host)
+  const wwPlayerCount = playerCount - 1
+  const maxW = maxWolves(wwPlayerCount)
+  // Default wolf count from table
+  const defaultWolfCount = { 4:1,5:1,6:1,7:2,8:2,9:2,10:2,11:3,12:3,13:3,14:3,15:4 }[wwPlayerCount] ?? Math.max(1, Math.floor(wwPlayerCount / 4))
+  const effectiveWolfCount = wolfCount ?? defaultWolfCount
 
   function toggleRole(id) {
     setSelectedRoles(r => r.includes(id) ? r.filter(x => x !== id) : [...r, id])
   }
 
   function validateRoles() {
+    if (gameType === 'werewolf') {
+      if (playerCount < 6) return 'Need at least 6 players (5 + you as moderator) to start'
+      if (effectiveWolfCount > maxW) return `Too many wolves — max ${maxW} for ${wwPlayerCount} players`
+      const hasWhiteWolf = selectedRoles.includes('WHITE_WOLF')
+      if (hasWhiteWolf && effectiveWolfCount < 2) return 'Need at least 2 wolves total to include a White Wolf'
+      return null
+    }
     const count = playerCount
     if (count < 5 || count > 10) return 'Need 5–10 players to start'
     const [goodSlots, evilSlots] = TEAM_SPLIT[count]
-    // Merlin+Assassin always included = 1 good + 1 evil taken
     const extraGood = selectedRoles.filter(r => r === 'PERCIVAL').length
     const extraEvil = selectedRoles.filter(r => ['MORGANA','MORDRED','OBERON'].includes(r)).length
     if (extraGood > goodSlots - 1) return 'Too many good special roles for this player count'
@@ -38,7 +63,11 @@ export default function LobbyScreen({ user, room, onLeave }) {
     setError('')
     setLoading(true)
     try {
-      await startGame(room.id, selectedRoles)
+      if (gameType === 'werewolf') {
+        await startWerewolfGame(room.id, selectedRoles, effectiveWolfCount)
+      } else {
+        await startGame(room.id, selectedRoles)
+      }
     } catch (e) {
       setError(e.message)
     } finally {
@@ -72,9 +101,9 @@ export default function LobbyScreen({ user, room, onLeave }) {
         <div className="player-list">
           {room.players.map(p => (
             <div className="player-row" key={p.id}>
-              <div className="avatar">{p.displayName[0].toUpperCase()}</div>
+              <PlayerAvatar player={p} />
               <div className="player-name">{p.displayName}</div>
-              {p.id === room.hostId && <span className="player-badge host">Host</span>}
+              {p.id === room.hostId && <span className="player-badge host">{gameType === 'werewolf' ? '📋 Moderator' : 'Host'}</span>}
               {p.id === user.uid    && <span className="player-badge you">You</span>}
             </div>
           ))}
@@ -91,8 +120,39 @@ export default function LobbyScreen({ user, room, onLeave }) {
           <div className="card">
             <div className="card-title">Game</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ flex: 1, fontWeight: 600 }}>🛡️ Avalon</div>
+              <div style={{ flex: 1, fontWeight: 600 }}>
+                {gameType === 'werewolf' ? '🐺 Werewolf' : '⚔️ Avalon'}
+              </div>
               <span className="player-badge host">Selected</span>
+            </div>
+          </div>
+
+          {gameType === 'avalon' && (<>
+          <div className="card">
+            <div className="card-title">Game Settings</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Show Leader Order</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                  Reveal the full turn order to all players
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLeaderOrder(room.id, !room.showLeaderOrder)}
+                style={{
+                  width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: room.showLeaderOrder ? 'var(--gold)' : 'var(--surface2)',
+                  position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                  outline: `1px solid ${room.showLeaderOrder ? 'var(--gold)' : 'var(--border)'}`,
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
+                  background: room.showLeaderOrder ? '#0d0d1a' : 'var(--muted)',
+                  transition: 'left 0.2s',
+                  left: room.showLeaderOrder ? 24 : 4,
+                }} />
+              </button>
             </div>
           </div>
 
@@ -114,16 +174,96 @@ export default function LobbyScreen({ user, room, onLeave }) {
               Always included: Merlin, Assassin, Loyal Servants, Minions of Mordred
             </div>
           </div>
+          </>)}
+
+          {gameType === 'werewolf' && (
+          <div className="card">
+            <div className="card-title">Werewolf Settings</div>
+
+            {/* Wolf count stepper */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 6 }}>
+                🐺 Number of Wolves
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <button
+                  className="btn btn-ghost btn-small"
+                  onClick={() => setWolfCount(Math.max(1, effectiveWolfCount - 1))}
+                  disabled={effectiveWolfCount <= 1}
+                  style={{ width: 36, fontWeight: 700, fontSize: '1.1rem' }}
+                >−</button>
+                <span style={{ fontWeight: 700, fontSize: '1.2rem', minWidth: 20, textAlign: 'center' }}>
+                  {effectiveWolfCount}
+                </span>
+                <button
+                  className="btn btn-ghost btn-small"
+                  onClick={() => setWolfCount(Math.min(maxW, effectiveWolfCount + 1))}
+                  disabled={effectiveWolfCount >= maxW}
+                  style={{ width: 36, fontWeight: 700, fontSize: '1.1rem' }}
+                >+</button>
+                <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                  max {maxW} for {wwPlayerCount} players
+                </span>
+              </div>
+            </div>
+
+            {/* Optional roles */}
+            <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Optional Roles</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {WW_OPTIONAL_ROLES.map(r => {
+                const isOn = selectedRoles.includes(r.id)
+                const disabled = r.id === 'WHITE_WOLF' && effectiveWolfCount < 2
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => !disabled && toggleRole(r.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
+                      borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer',
+                      opacity: disabled ? 0.45 : 1,
+                      background: isOn ? 'var(--surface)' : 'var(--surface2)',
+                      border: `1.5px solid ${isOn ? 'var(--gold)' : 'var(--border)'}`,
+                    }}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>{r.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{r.label}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                        {r.id === 'WHITE_WOLF' && effectiveWolfCount < 2
+                          ? 'Requires at least 2 wolves total'
+                          : r.desc}
+                      </div>
+                    </div>
+                    {isOn && <span className="player-badge host">✓ On</span>}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="text-muted mt-2" style={{ fontSize: '0.8rem' }}>
+              Always included: Werewolves, Seer, Doctor, Villagers
+            </div>
+          </div>
+          )}
 
           {error && <div className="error-msg">{error}</div>}
 
-          <button
-            className="btn btn-primary"
-            disabled={playerCount < 5 || loading}
-            onClick={handleStart}
-          >
-            {loading ? '...' : playerCount < 5 ? `Need ${5 - playerCount} more player${5 - playerCount !== 1 ? 's' : ''}` : 'Start Game'}
-          </button>
+          {(() => {
+            const minPlayers = gameType === 'werewolf' ? 6 : 5  // werewolf: 5 players + 1 moderator
+            const needed = minPlayers - playerCount
+            const canStart = playerCount >= minPlayers
+            const label = gameType === 'werewolf'
+              ? `Need ${needed} more player${needed !== 1 ? 's' : ''} (+ you as moderator)`
+              : `Need ${needed} more player${needed !== 1 ? 's' : ''}`
+            return (
+              <button
+                className="btn btn-primary"
+                disabled={!canStart || loading}
+                onClick={handleStart}
+              >
+                {loading ? '...' : !canStart ? label : 'Start Game'}
+              </button>
+            )
+          })()}
         </>
       )}
 

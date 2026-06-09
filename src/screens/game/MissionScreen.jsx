@@ -1,5 +1,6 @@
 import { playMissionCard } from '../../roomActions'
 import QuestHeader from './QuestHeader'
+import PlayerAvatar from '../../components/PlayerAvatar'
 
 export default function MissionScreen({ user, room }) {
   const onTeam = (room.team || []).includes(user.uid)
@@ -25,7 +26,7 @@ export default function MissionScreen({ user, room }) {
         <div className="player-list">
           {teamPlayers.map(p => (
             <div className="player-row" key={p.id}>
-              <div className="avatar">{p.displayName[0].toUpperCase()}</div>
+              <PlayerAvatar player={p} />
               <div className="player-name">{p.displayName}</div>
               {p.id === user.uid && <span className="player-badge you">You</span>}
               {room.missionCards?.[p.id] !== undefined && <span className="player-badge host">✓ Played</span>}

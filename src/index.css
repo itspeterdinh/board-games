@@ -50,6 +50,7 @@ input:focus { border-color: var(--gold); }
 .btn-success { background: var(--green); color: #fff; }
 .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-small   { padding: 8px 14px; font-size: 0.85rem; width: auto; border-radius: 8px; }
+.btn-google  { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; font-weight: 500; }
 
 .player-list { display: flex; flex-direction: column; gap: 8px; }
 .player-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: 8px; padding: 10px 12px; }

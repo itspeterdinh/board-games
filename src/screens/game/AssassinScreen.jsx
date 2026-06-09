@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { assassinate } from '../../roomActions'
 import QuestHeader from './QuestHeader'
+import PlayerAvatar from '../../components/PlayerAvatar'
 
 export default function AssassinScreen({ user, room }) {
   const myRole = room.roles?.[user.uid]
@@ -42,9 +43,7 @@ export default function AssassinScreen({ user, room }) {
                   onClick={() => setTarget(p.id)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="avatar" style={target === p.id ? { background: 'var(--red)' } : {}}>
-                    {p.displayName[0].toUpperCase()}
-                  </div>
+                  <PlayerAvatar player={p} style={target === p.id ? { background: 'var(--red)' } : {}} />
                   <div className="player-name">{p.displayName}</div>
                   {target === p.id && <span className="player-badge" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}>Target</span>}
                 </div>

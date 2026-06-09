@@ -1,26 +1,54 @@
 import { useState, useEffect } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from './firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db } from './firebase'
 import { useRoom } from './useRoom'
 import AuthScreen from './screens/AuthScreen'
 import HomeScreen from './screens/HomeScreen'
 import LobbyScreen from './screens/LobbyScreen'
 import GameScreen from './screens/GameScreen'
 
+const ROOM_KEY = 'bg_room_id'
+
+function saveRoom(id) {
+  if (id) sessionStorage.setItem(ROOM_KEY, id)
+  else sessionStorage.removeItem(ROOM_KEY)
+}
+
 export default function App() {
   const [user, setUser] = useState(undefined)
-  const [roomId, setRoomId] = useState(null)
+  const [roomId, setRoomId] = useState(() => sessionStorage.getItem(ROOM_KEY))
 
-  useEffect(() => onAuthStateChanged(auth, u => setUser(u || null)), [])
+  useEffect(() => onAuthStateChanged(auth, async (u) => {
+    if (!u) { setUser(null); return }
+    // Merge Firestore profile (has base64 photoURL) over the Auth user object
+    try {
+      const snap = await getDoc(doc(db, 'users', u.uid))
+      const profile = snap.exists() ? snap.data() : {}
+      setUser({ ...u, displayName: profile.displayName || u.displayName, photoURL: profile.photoURL || u.photoURL || null })
+    } catch {
+      setUser(u)
+    }
+  }), [])
+
+  function joinRoom(id) {
+    saveRoom(id)
+    setRoomId(id)
+  }
+
+  function leaveRoom() {
+    saveRoom(null)
+    setRoomId(null)
+  }
 
   if (user === undefined) {
     return <div className="screen"><div className="spinner" style={{ marginTop: 80 }} /></div>
   }
 
   if (!user) return <AuthScreen onAuth={setUser} />
-  if (!roomId) return <HomeScreen user={user} onJoin={setRoomId} />
+  if (!roomId) return <HomeScreen user={user} onJoin={joinRoom} onUserUpdated={u => setUser({ ...user, ...u })} />
 
-  return <RoomController user={user} roomId={roomId} onLeave={() => setRoomId(null)} />
+  return <RoomController user={user} roomId={roomId} onLeave={leaveRoom} />
 }
 
 function RoomController({ user, roomId, onLeave }) {
