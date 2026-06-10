@@ -1,6 +1,6 @@
-import { playMissionCard } from '../../roomActions'
+import { playMissionCard } from '../../../roomActions'
 import QuestHeader from './QuestHeader'
-import PlayerAvatar from '../../components/PlayerAvatar'
+import PlayerAvatar from '../../../components/PlayerAvatar'
 
 export default function MissionScreen({ user, room }) {
   const onTeam = (room.team || []).includes(user.uid)

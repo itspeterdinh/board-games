@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { readyForDay } from '../../roomActions'
-import { ROLES, ROLE_DESCRIPTIONS } from '../../avalon'
+import { readyForDay } from '../../../roomActions'
+import { ROLES, ROLE_DESCRIPTIONS } from '../../../avalon'
 
 const ROLE_ICONS = {
   MERLIN: '🔮', PERCIVAL: '🛡️', LOYAL_SERVANT: '⚔️',

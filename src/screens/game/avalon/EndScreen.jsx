@@ -1,5 +1,5 @@
-import { resetToLobby } from '../../roomActions'
-import { ROLES } from '../../avalon'
+import { resetToLobby } from '../../../roomActions'
+import { ROLES } from '../../../avalon'
 
 const ROLE_ICONS_MAP = {
   MERLIN: '🔮', PERCIVAL: '🛡️', LOYAL_SERVANT: '⚔️',

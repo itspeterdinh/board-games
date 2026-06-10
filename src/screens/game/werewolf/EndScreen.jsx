@@ -1,10 +1,11 @@
 import { WW_ROLES } from '../../../werewolf';
 import { resetToLobby } from '../../../roomActions';
-// import { leaveRoom } from '../../../roomActions';
 import PlayerAvatar from '../../../components/PlayerAvatar';
+import PreviousNightsLog from './PreviousNightsLog';
 
 export default function WerewolfEndScreen({ user, room, onLeave }) {
-  const { winner, players, roles, deadPlayers, hostId, lovers } = room;
+  const { winner, players, roles, deadPlayers, hostId, lovers, nightLogs } = room;
+  const playerMap = Object.fromEntries(players.map((p) => [p.id, p]));
   const isHost = user.uid === hostId;
   const myRole = roles?.[user.uid];
   const myRoleData = WW_ROLES[myRole];
@@ -48,16 +49,18 @@ export default function WerewolfEndScreen({ user, room, onLeave }) {
             ? 'The wolves have taken over the village.'
             : 'The villagers hunted down every last wolf.'}
         </div>
-        <div
-          style={{
-            marginTop: 12,
-            fontWeight: 700,
-            fontSize: '1rem',
-            color: isWinner ? '#f1c40f' : 'var(--muted)',
-          }}
-        >
-          {isWinner ? '🏆 You Won!' : '💀 You Lost'}
-        </div>
+        {!isHost && (
+          <div
+            style={{
+              marginTop: 12,
+              fontWeight: 700,
+              fontSize: '1rem',
+              color: isWinner ? '#f1c40f' : 'var(--muted)',
+            }}
+          >
+            {isWinner ? '🏆 You Won!' : '💀 You Lost'}
+          </div>
+        )}
       </div>
 
       {/* All roles revealed */}
@@ -149,6 +152,10 @@ export default function WerewolfEndScreen({ user, room, onLeave }) {
             );
           })}
         </div>
+      )}
+
+      {nightLogs?.length > 0 && (
+        <PreviousNightsLog nightLogs={nightLogs} playerMap={playerMap} roles={roles} />
       )}
 
       {isHost ? (

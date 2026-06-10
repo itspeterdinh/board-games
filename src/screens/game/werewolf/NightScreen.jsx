@@ -108,7 +108,8 @@ function buildNightLog(room, playerMap) {
     witchUsedPoison,
   } = room;
 
-  const has = (r) => (alivePlayers || []).some((uid) => roles?.[uid] === r);
+  const has = (r) => Object.values(roles || {}).some((v) => v === r);
+  const isRoleAlive = (r) => (alivePlayers || []).some((uid) => roles?.[uid] === r);
 
   // Ordered phases active this round
   const phases = [];
@@ -173,6 +174,9 @@ function buildNightLog(room, playerMap) {
       }
     }
 
+    const phaseRoleMap = { seer: 'SEER', doctor: 'DOCTOR', hunter: 'HUNTER', witch: 'WITCH' };
+    const playerDead = phase in phaseRoleMap && !isRoleAlive(phaseRoleMap[phase]);
+
     return {
       phase,
       icon: SCRIPTS[phase]?.icon || '🌙',
@@ -180,6 +184,7 @@ function buildNightLog(room, playerMap) {
       isDone,
       isCurrent,
       detail,
+      playerDead,
     };
   });
 }
@@ -292,16 +297,14 @@ function ModeratorNightView({ room }) {
                   }}
                 >
                   {entry.label}
-                  {entry.isCurrent && (
-                    <span
-                      style={{
-                        fontWeight: 400,
-                        fontSize: '0.78rem',
-                        color: 'var(--muted)',
-                        marginLeft: 6,
-                      }}
-                    >
+                  {entry.isCurrent && !entry.playerDead && (
+                    <span style={{ fontWeight: 400, fontSize: '0.78rem', color: 'var(--muted)', marginLeft: 6 }}>
                       waiting…
+                    </span>
+                  )}
+                  {entry.isCurrent && entry.playerDead && (
+                    <span style={{ fontWeight: 400, fontSize: '0.78rem', color: 'var(--red,#e74c3c)', marginLeft: 6 }}>
+                      💀 dead — call anyway, then advance
                     </span>
                   )}
                 </div>
@@ -1017,9 +1020,12 @@ function DoctorAction({ room, user, aliveList }) {
 }
 
 function WitchAction({ room, user, aliveList }) {
-  const { wolfKillTarget, witchUsedSave, witchUsedPoison, players } = room;
+  const { wolfKillTarget, witchUsedSave, witchUsedPoison, players, witchSeesKill } = room;
   const playerMap = Object.fromEntries(players.map((p) => [p.id, p]));
-  const wolfVictim = wolfKillTarget ? playerMap[wolfKillTarget] : null;
+  const canSeeKill = witchSeesKill ?? true;
+  const isSelfTargeted = wolfKillTarget === user.uid;
+  // Always show save if witch is the target (self-save), otherwise respect canSeeKill setting
+  const wolfVictim = (canSeeKill || isSelfTargeted) && wolfKillTarget ? playerMap[wolfKillTarget] : null;
 
   const [willSave, setWillSave] = useState(false);
   const [poisonPick, setPoisonPick] = useState(null);
@@ -1055,18 +1061,11 @@ function WitchAction({ room, user, aliveList }) {
           }}
         >
           <div style={{ fontWeight: 600, marginBottom: 6 }}>💊 Save Potion</div>
-          <div
-            style={{
-              fontSize: '0.85rem',
-              color: 'var(--muted)',
-              marginBottom: 8,
-            }}
-          >
-            Wolves targeted{' '}
-            <strong style={{ color: 'var(--text)' }}>
-              {wolfVictim.displayName}
-            </strong>
-            . Save them?
+          <div style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: 8 }}>
+            {isSelfTargeted
+              ? <span style={{ color: 'var(--red,#e74c3c)' }}>⚠️ You were targeted by the wolves. Save yourself?</span>
+              : <>Wolves targeted <strong style={{ color: 'var(--text)' }}>{wolfVictim.displayName}</strong>. Save them?</>
+            }
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -1078,20 +1077,20 @@ function WitchAction({ room, user, aliveList }) {
             <button
               className={`btn btn-small ${!willSave ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => setWillSave(false)}
+              disabled={isSelfTargeted}
             >
               Skip
             </button>
           </div>
         </div>
       ) : witchUsedSave ? (
-        <div
-          style={{
-            fontSize: '0.82rem',
-            color: 'var(--muted)',
-            marginBottom: 8,
-          }}
-        >
+        <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginBottom: 8 }}>
           💊 Save potion already used.
+          {canSeeKill && wolfKillTarget && (
+            <span style={{ color: 'var(--text)', marginLeft: 6 }}>
+              Wolves targeted <strong>{playerMap[wolfKillTarget]?.displayName}</strong>.
+            </span>
+          )}
         </div>
       ) : (
         <div
@@ -1111,7 +1110,7 @@ function WitchAction({ room, user, aliveList }) {
             ☠️ Poison Potion (optional)
           </div>
           <div className="player-list">
-            {aliveList.map((p) => (
+            {aliveList.filter((p) => p.id !== user.uid).map((p) => (
               <div
                 key={p.id}
                 className={`player-row selectable ${poisonPick === p.id ? 'selected' : ''}`}

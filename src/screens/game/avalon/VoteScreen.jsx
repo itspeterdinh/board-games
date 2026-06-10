@@ -1,6 +1,6 @@
-import { castVote } from '../../roomActions'
+import { castVote } from '../../../roomActions'
 import QuestHeader from './QuestHeader'
-import PlayerAvatar from '../../components/PlayerAvatar'
+import PlayerAvatar from '../../../components/PlayerAvatar'
 
 export default function VoteScreen({ user, room }) {
   const myVote = room.votes?.[user.uid]

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { advanceFromResult } from '../../roomActions'
+import { advanceFromResult } from '../../../roomActions'
 import QuestHeader from './QuestHeader'
 
 export default function ResultScreen({ user, room }) {
@@ -37,17 +37,6 @@ export default function ResultScreen({ user, room }) {
       <div className="screen-title">Quest {room.currentQuest + 1} Result</div>
       <QuestHeader room={room} />
 
-      {/* Cards */}
-      <div style={styles.cardsRow}>
-        {cards.map((card, i) => (
-          <div key={i} style={{
-            ...styles.card,
-            ...(revealed.includes(i) ? (card === 'success' ? styles.cardSuccess : styles.cardFail) : styles.cardHidden),
-          }}>
-            {revealed.includes(i) ? (card === 'success' ? '✓' : '✗') : '?'}
-          </div>
-        ))}
-      </div>
 
       {/* Tally */}
       {done && (

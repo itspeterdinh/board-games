@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { assassinate } from '../../roomActions'
+import { assassinate } from '../../../roomActions'
 import QuestHeader from './QuestHeader'
-import PlayerAvatar from '../../components/PlayerAvatar'
+import PlayerAvatar from '../../../components/PlayerAvatar'
 
 export default function AssassinScreen({ user, room }) {
   const myRole = room.roles?.[user.uid]

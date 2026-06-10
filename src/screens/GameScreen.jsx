@@ -1,15 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { leaveRoom, resetToLobby } from '../roomActions'
-import NightScreen from './game/NightScreen'
-import ProposeScreen from './game/ProposeScreen'
-import VoteScreen from './game/VoteScreen'
-import VoteResultScreen from './game/VoteResultScreen'
-import MissionScreen from './game/MissionScreen'
-import ResultScreen from './game/ResultScreen'
-import AssassinScreen from './game/AssassinScreen'
-import EndScreen from './game/EndScreen'
+import NightScreen from './game/avalon/NightScreen'
+import ProposeScreen from './game/avalon/ProposeScreen'
+import VoteScreen from './game/avalon/VoteScreen'
+import VoteResultScreen from './game/avalon/VoteResultScreen'
+import MissionScreen from './game/avalon/MissionScreen'
+import ResultScreen from './game/avalon/ResultScreen'
+import AssassinScreen from './game/avalon/AssassinScreen'
+import EndScreen from './game/avalon/EndScreen'
 import RolePeek from '../components/RolePeek'
 // Werewolf screens
+import WerewolfRoleReveal  from './game/werewolf/RoleRevealScreen'
 import WerewolfNightScreen from './game/werewolf/NightScreen'
 import WerewolfDayReveal   from './game/werewolf/DayRevealScreen'
 import WerewolfDayScreen   from './game/werewolf/DayScreen'
@@ -18,9 +19,29 @@ import WerewolfHunterShot  from './game/werewolf/HunterShotScreen'
 import WerewolfEndScreen   from './game/werewolf/EndScreen'
 import { WW_ROLES } from '../werewolf'
 
+const INACTIVITY_MS = 10_000
+
 export default function GameScreen({ user, room, onLeave }) {
   const [confirm, setConfirm] = useState(false)
   const [peekOpen, setPeekOpen] = useState(false)
+  const [blurred, setBlurred] = useState(false)
+  const timerRef = useRef(null)
+
+  const resetTimer = useCallback(() => {
+    setBlurred(false)
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setBlurred(true), INACTIVITY_MS)
+  }, [])
+
+  useEffect(() => {
+    const events = ['touchstart', 'mousemove', 'mousedown', 'keydown']
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }))
+    resetTimer()
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer))
+      clearTimeout(timerRef.current)
+    }
+  }, [resetTimer])
   const props = { user, room, onLeave }
   const myRole = room.roles?.[user.uid]
   const isWerewolf = (room.gameType || room.game) === 'werewolf'
@@ -41,6 +62,7 @@ export default function GameScreen({ user, room, onLeave }) {
   function renderGame() {
     if (isWerewolf) {
       switch (room.status) {
+        case 'ww_roleReveal': return <WerewolfRoleReveal   {...props} />
         case 'ww_night':      return <WerewolfNightScreen {...props} />
         case 'ww_dayReveal':  return <WerewolfDayReveal   {...props} />
         case 'ww_day':
@@ -65,7 +87,7 @@ export default function GameScreen({ user, room, onLeave }) {
   }
 
   const wwRoleData = isWerewolf ? WW_ROLES[myRole] : null
-  const showWwPeek = isWerewolf && room.status !== 'ended' && wwRoleData
+  const showWwPeek = false
 
   return (
     <>
@@ -154,6 +176,25 @@ export default function GameScreen({ user, room, onLeave }) {
         >
           ← {isHost ? 'Lobby' : 'Leave'}
         </button>
+      )}
+
+      {/* Inactivity blur */}
+      {blurred && (
+        <div
+          onTouchStart={resetTimer}
+          onMouseDown={resetTimer}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 400,
+            background: '#000',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ textAlign: 'center', color: 'var(--muted)', userSelect: 'none' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔒</div>
+            <div style={{ fontSize: '0.9rem' }}>Tap to reveal</div>
+          </div>
+        </div>
       )}
 
       {/* Confirmation overlay */}

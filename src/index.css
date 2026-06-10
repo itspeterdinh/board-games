@@ -121,7 +121,7 @@ input:focus { border-color: var(--gold); }
 .mb-2 { margin-bottom: 8px; }
 .mt-2 { margin-top: 8px; }
 
-.header-row { display: flex; align-items: center; gap: 10px; }
+.header-row { display: flex; align-items: center; gap: 10px; position: relative; }
 .header-row .screen-title { flex: 1; }
 
 .divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.85rem; }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { leaveRoom, startGame, setShowLeaderOrder } from '../roomActions'
+import { leaveRoom, startGame, setShowLeaderOrder, setWitchSeesKill, setDoctorBlocksPoison } from '../roomActions'
 import { startWerewolfGame } from '../werewolfActions'
 import { TEAM_SPLIT } from '../avalon'
 import { maxWolves } from '../werewolf'
@@ -32,7 +32,7 @@ export default function LobbyScreen({ user, room, onLeave }) {
   const wwPlayerCount = playerCount - 1
   const maxW = maxWolves(wwPlayerCount)
   // Default wolf count from table
-  const defaultWolfCount = { 4:1,5:1,6:1,7:2,8:2,9:2,10:2,11:3,12:3,13:3,14:3,15:4 }[wwPlayerCount] ?? Math.max(1, Math.floor(wwPlayerCount / 4))
+  const defaultWolfCount = { 4:1,5:1,6:1,7:2,8:2,9:2,10:2,11:3,12:3,13:3,14:3,15:4,16:4 }[wwPlayerCount] ?? Math.max(1, Math.floor(wwPlayerCount / 4))
   const effectiveWolfCount = wolfCount ?? defaultWolfCount
 
   function toggleRole(id) {
@@ -85,7 +85,7 @@ export default function LobbyScreen({ user, room, onLeave }) {
   return (
     <div className="screen">
       <div className="header-row">
-        <div className="screen-title" style={{ flex: 1 }}>Lobby</div>
+        <div className="screen-title" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>Lobby</div>
         <button className="btn btn-ghost btn-small" onClick={handleLeave}>Leave</button>
       </div>
 
@@ -97,7 +97,7 @@ export default function LobbyScreen({ user, room, onLeave }) {
       </div>
 
       <div className="card">
-        <div className="card-title">Players ({playerCount}/10)</div>
+        <div className="card-title">Players ({playerCount}/16)</div>
         <div className="player-list">
           {room.players.map(p => (
             <div className="player-row" key={p.id}>
@@ -108,7 +108,11 @@ export default function LobbyScreen({ user, room, onLeave }) {
             </div>
           ))}
         </div>
-        {split && (
+        {gameType === 'werewolf' ? (
+          <div className="text-muted mt-2 text-center" style={{ fontSize: '0.8rem' }}>
+            {wwPlayerCount} players · {effectiveWolfCount} wolf{effectiveWolfCount !== 1 ? 's' : ''} · {wwPlayerCount - effectiveWolfCount} villager{(wwPlayerCount - effectiveWolfCount) !== 1 ? 's' : ''}
+          </div>
+        ) : split && (
           <div className="text-muted mt-2 text-center" style={{ fontSize: '0.8rem' }}>
             {split[0]} good · {split[1]} evil
           </div>
@@ -206,6 +210,62 @@ export default function LobbyScreen({ user, room, onLeave }) {
                 </span>
               </div>
             </div>
+
+            {/* Witch sees kill toggle */}
+            {selectedRoles.includes('WITCH') && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>🧙 Witch sees wolf target</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
+                    Show witch who the wolves killed (even if already saved)
+                  </div>
+                </div>
+                <button
+                  onClick={() => setWitchSeesKill(room.id, !(room.witchSeesKill ?? true))}
+                  style={{
+                    width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: (room.witchSeesKill ?? true) ? 'var(--gold)' : 'var(--surface2)',
+                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                    outline: `1px solid ${(room.witchSeesKill ?? true) ? 'var(--gold)' : 'var(--border)'}`,
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
+                    background: (room.witchSeesKill ?? true) ? '#0d0d1a' : 'var(--muted)',
+                    transition: 'left 0.2s',
+                    left: (room.witchSeesKill ?? true) ? 24 : 4,
+                  }} />
+                </button>
+              </div>
+            )}
+
+            {/* Doctor blocks poison toggle */}
+            {selectedRoles.includes('WITCH') && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>💉 Doctor blocks poison</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
+                    Doctor can protect a player from witch poison (and wolf kill simultaneously)
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDoctorBlocksPoison(room.id, !(room.doctorBlocksPoison ?? false))}
+                  style={{
+                    width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                    background: (room.doctorBlocksPoison ?? false) ? 'var(--gold)' : 'var(--surface2)',
+                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                    outline: `1px solid ${(room.doctorBlocksPoison ?? false) ? 'var(--gold)' : 'var(--border)'}`,
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
+                    background: (room.doctorBlocksPoison ?? false) ? '#0d0d1a' : 'var(--muted)',
+                    transition: 'left 0.2s',
+                    left: (room.doctorBlocksPoison ?? false) ? 24 : 4,
+                  }} />
+                </button>
+              </div>
+            )}
 
             {/* Optional roles */}
             <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 8 }}>Optional Roles</div>

@@ -1,4 +1,4 @@
-import { QUEST_SIZES } from '../../avalon'
+import { QUEST_SIZES } from '../../../avalon'
 import LeaderOrder from './LeaderOrder'
 
 export default function QuestHeader({ room }) {
@@ -22,14 +22,6 @@ export default function QuestHeader({ room }) {
               </div>
             )
           })}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 14 }}>
-          <span className="text-muted" style={{ fontSize: '0.8rem' }}>Rejection strikes:</span>
-          <div className="rejection-bar">
-            {[0,1,2,3,4].map(i => (
-              <div key={i} className={`rejection-pip ${i < rejectionCount ? 'used' : ''}`} />
-            ))}
-          </div>
         </div>
       </div>
       <LeaderOrder room={room} />

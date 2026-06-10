@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { WW_ROLES } from '../../../werewolf'
 import { advanceFromDayResult } from '../../../werewolfActions'
 import PlayerAvatar from '../../../components/PlayerAvatar'
@@ -10,14 +10,11 @@ export default function DayResultScreen({ user, room }) {
   const playerMap = Object.fromEntries(players.map(p => [p.id, p]))
   const [advanced, setAdvanced] = useState(false)
 
-  useEffect(() => {
-    if (!isHost || advanced) return
-    const t = setTimeout(async () => {
-      setAdvanced(true)
-      await advanceFromDayResult(room.id)
-    }, 5000)
-    return () => clearTimeout(t)
-  }, [isHost])
+  async function handleStartNight() {
+    if (advanced) return
+    setAdvanced(true)
+    await advanceFromDayResult(room.id)
+  }
 
   const eliminatedPlayer = dayEliminated ? playerMap[dayEliminated] : null
   const eliminatedRole = dayEliminated ? WW_ROLES[roles?.[dayEliminated]] : null
@@ -83,12 +80,16 @@ export default function DayResultScreen({ user, room }) {
         </>
       )}
 
-      <div className="card text-center">
-        <div className="text-muted" style={{ fontSize: '0.85rem' }}>
-          {isHost ? 'Advancing in a moment…' : 'Waiting for next phase…'}
+      {isHost ? (
+        <button className="btn btn-primary" onClick={handleStartNight} disabled={advanced}>
+          🌙 Start Night
+        </button>
+      ) : (
+        <div className="card text-center">
+          <div className="text-muted" style={{ fontSize: '0.85rem' }}>Waiting for next phase…</div>
+          <div className="spinner" style={{ margin: '10px auto 0' }} />
         </div>
-        <div className="spinner" style={{ margin: '10px auto 0' }} />
-      </div>
+      )}
 
       {isHost && nightLogs?.length > 0 && (
         <PreviousNightsLog nightLogs={nightLogs} playerMap={playerMap} roles={roles} />

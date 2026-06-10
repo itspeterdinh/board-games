@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { proposeTeam } from '../../roomActions'
-import { QUEST_SIZES } from '../../avalon'
+import { proposeTeam } from '../../../roomActions'
+import { QUEST_SIZES } from '../../../avalon'
 import QuestHeader from './QuestHeader'
-import PlayerAvatar from '../../components/PlayerAvatar'
+import PlayerAvatar from '../../../components/PlayerAvatar'
 
 export default function ProposeScreen({ user, room }) {
   const isLeader = room.leader === user.uid
