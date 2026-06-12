@@ -25,7 +25,7 @@ export default function App() {
     try {
       const snap = await getDoc(doc(db, 'users', u.uid))
       const profile = snap.exists() ? snap.data() : {}
-      setUser({ ...u, displayName: profile.displayName || u.displayName, photoURL: profile.photoURL || u.photoURL || null })
+      setUser({ ...u, displayName: profile.displayName || u.displayName, photoURL: profile.photoURL || u.photoURL || null, role: profile.role || 'user' })
     } catch {
       setUser(u)
     }
