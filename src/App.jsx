@@ -20,10 +20,6 @@ export default function App() {
   const [user, setUser] = useState(undefined)
   const [roomId, setRoomId] = useState(() => sessionStorage.getItem(ROOM_KEY))
 
-  if (window.location.pathname === '/rules') {
-    return <AvalonRulesScreen onBack={() => { window.history.pushState({}, '', '/'); window.location.reload() }} />
-  }
-
   useEffect(() => onAuthStateChanged(auth, async (u) => {
     if (!u) { setUser(null); return }
     // Merge Firestore profile (has base64 photoURL) over the Auth user object
@@ -44,6 +40,10 @@ export default function App() {
   function leaveRoom() {
     saveRoom(null)
     setRoomId(null)
+  }
+
+  if (window.location.pathname === '/rules') {
+    return <AvalonRulesScreen onBack={() => { window.history.pushState({}, '', '/'); window.location.reload() }} />
   }
 
   if (user === undefined) {

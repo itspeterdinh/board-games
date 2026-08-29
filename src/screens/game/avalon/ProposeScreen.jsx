@@ -6,11 +6,14 @@ import PlayerAvatar from '../../../components/PlayerAvatar'
 
 export default function ProposeScreen({ user, room }) {
   const isLeader = room.leader === user.uid
+  const isHost = room.hostId === user.uid
+  const canPropose = room.hostProposesTeam ? isHost : isLeader
   const teamSize = QUEST_SIZES[room.players.length]?.[room.currentQuest] || 2
   const [selected, setSelected] = useState([])
   const [loading, setLoading] = useState(false)
 
   function toggle(id) {
+    if (!canPropose) return
     if (selected.includes(id)) {
       setSelected(s => s.filter(x => x !== id))
     } else if (selected.length < teamSize) {
@@ -44,15 +47,19 @@ export default function ProposeScreen({ user, room }) {
 
       <div className="card">
         <div className="card-title">
-          {isLeader ? `Choose ${teamSize} players for the quest` : `Leader is choosing ${teamSize} players`}
+          {canPropose
+            ? `Choose ${teamSize} players for the quest`
+            : room.hostProposesTeam
+              ? `Host is choosing ${teamSize} players`
+              : `Leader is choosing ${teamSize} players`}
         </div>
         <div className="player-list">
           {room.players.map(p => (
             <div
               key={p.id}
-              className={`player-row ${isLeader ? 'selectable' : ''} ${selected.includes(p.id) ? 'selected' : ''}`}
-              onClick={() => isLeader && toggle(p.id)}
-              style={{ cursor: isLeader ? 'pointer' : 'default' }}
+              className={`player-row ${canPropose ? 'selectable' : ''} ${selected.includes(p.id) ? 'selected' : ''}`}
+              onClick={() => toggle(p.id)}
+              style={{ cursor: canPropose ? 'pointer' : 'default' }}
             >
               <PlayerAvatar player={p} style={selected.includes(p.id) ? { background: 'var(--gold)' } : {}} />
               <div className="player-name">{p.displayName}</div>
@@ -63,7 +70,7 @@ export default function ProposeScreen({ user, room }) {
         </div>
       </div>
 
-      {isLeader && (
+      {canPropose && (
         <button
           className="btn btn-primary"
           disabled={selected.length !== teamSize || loading}
@@ -73,9 +80,13 @@ export default function ProposeScreen({ user, room }) {
         </button>
       )}
 
-      {!isLeader && (
+      {!canPropose && (
         <div className="card text-center">
-          <div className="text-muted">Waiting for {leader?.displayName} to propose a team…</div>
+          <div className="text-muted">
+            {room.hostProposesTeam
+              ? `Waiting for host to propose a team…`
+              : `Waiting for ${leader?.displayName} to propose a team…`}
+          </div>
           <div className="spinner" style={{ margin: '12px auto 0' }} />
         </div>
       )}

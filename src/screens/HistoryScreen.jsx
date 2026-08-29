@@ -11,14 +11,19 @@ export default function HistoryScreen({ user, onBack }) {
 
   useEffect(() => {
     async function load() {
-      const q = query(
-        collection(db, 'users', user.uid, 'gameHistory'),
-        orderBy('playedAt', 'desc'),
-        limit(50)
-      )
-      const snap = await getDocs(q)
-      setGames(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      setLoading(false)
+      try {
+        const q = query(
+          collection(db, 'users', user.uid, 'gameHistory'),
+          orderBy('playedAt', 'desc'),
+          limit(50)
+        )
+        const snap = await getDocs(q)
+        setGames(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      } catch (err) {
+        console.error('Failed to load history:', err)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [user.uid])

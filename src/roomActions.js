@@ -248,6 +248,10 @@ export async function setShowLeaderOrder(roomId, value) {
   await updateDoc(roomRef(roomId), { showLeaderOrder: value })
 }
 
+export async function setHostProposesTeam(roomId, value) {
+  await updateDoc(roomRef(roomId), { hostProposesTeam: value })
+}
+
 export async function setWitchSeesKill(roomId, value) {
   await updateDoc(roomRef(roomId), { witchSeesKill: value })
 }

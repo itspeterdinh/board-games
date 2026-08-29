@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { leaveRoom, startGame, setShowLeaderOrder, setWitchSeesKill, setDoctorBlocksPoison } from '../roomActions'
+import { leaveRoom, startGame, setShowLeaderOrder, setHostProposesTeam, setWitchSeesKill, setDoctorBlocksPoison } from '../roomActions'
 import { startWerewolfGame } from '../werewolfActions'
 import { TEAM_SPLIT } from '../avalon'
 import { maxWolves } from '../werewolf'
@@ -134,29 +134,25 @@ export default function LobbyScreen({ user, room, onLeave }) {
           {gameType === 'avalon' && (<>
           <div className="card">
             <div className="card-title">Game Settings</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Show Leader Order</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
-                  Reveal the full turn order to all players
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Show Leader Order</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                    Reveal the full turn order to all players
+                  </div>
                 </div>
+                <Toggle on={room.showLeaderOrder} onToggle={() => setShowLeaderOrder(room.id, !room.showLeaderOrder)} />
               </div>
-              <button
-                onClick={() => setShowLeaderOrder(room.id, !room.showLeaderOrder)}
-                style={{
-                  width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                  background: room.showLeaderOrder ? 'var(--gold)' : 'var(--surface2)',
-                  position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                  outline: `1px solid ${room.showLeaderOrder ? 'var(--gold)' : 'var(--border)'}`,
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
-                  background: room.showLeaderOrder ? '#0d0d1a' : 'var(--muted)',
-                  transition: 'left 0.2s',
-                  left: room.showLeaderOrder ? 24 : 4,
-                }} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>Host Proposes Team</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                    Host selects the quest team on behalf of each leader
+                  </div>
+                </div>
+                <Toggle on={room.hostProposesTeam} onToggle={() => setHostProposesTeam(room.id, !room.hostProposesTeam)} />
+              </div>
             </div>
           </div>
 
@@ -220,22 +216,7 @@ export default function LobbyScreen({ user, room, onLeave }) {
                     Show witch who the wolves killed (even if already saved)
                   </div>
                 </div>
-                <button
-                  onClick={() => setWitchSeesKill(room.id, !(room.witchSeesKill ?? true))}
-                  style={{
-                    width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                    background: (room.witchSeesKill ?? true) ? 'var(--gold)' : 'var(--surface2)',
-                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                    outline: `1px solid ${(room.witchSeesKill ?? true) ? 'var(--gold)' : 'var(--border)'}`,
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
-                    background: (room.witchSeesKill ?? true) ? '#0d0d1a' : 'var(--muted)',
-                    transition: 'left 0.2s',
-                    left: (room.witchSeesKill ?? true) ? 24 : 4,
-                  }} />
-                </button>
+                <Toggle on={room.witchSeesKill ?? true} onToggle={() => setWitchSeesKill(room.id, !(room.witchSeesKill ?? true))} />
               </div>
             )}
 
@@ -248,22 +229,7 @@ export default function LobbyScreen({ user, room, onLeave }) {
                     Doctor can protect a player from witch poison (and wolf kill simultaneously)
                   </div>
                 </div>
-                <button
-                  onClick={() => setDoctorBlocksPoison(room.id, !(room.doctorBlocksPoison ?? false))}
-                  style={{
-                    width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                    background: (room.doctorBlocksPoison ?? false) ? 'var(--gold)' : 'var(--surface2)',
-                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                    outline: `1px solid ${(room.doctorBlocksPoison ?? false) ? 'var(--gold)' : 'var(--border)'}`,
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
-                    background: (room.doctorBlocksPoison ?? false) ? '#0d0d1a' : 'var(--muted)',
-                    transition: 'left 0.2s',
-                    left: (room.doctorBlocksPoison ?? false) ? 24 : 4,
-                  }} />
-                </button>
+                <Toggle on={room.doctorBlocksPoison ?? false} onToggle={() => setDoctorBlocksPoison(room.id, !(room.doctorBlocksPoison ?? false))} />
               </div>
             )}
 
@@ -334,5 +300,26 @@ export default function LobbyScreen({ user, room, onLeave }) {
         </div>
       )}
     </div>
+  )
+}
+
+function Toggle({ on, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      style={{
+        width: 48, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+        background: on ? 'var(--gold)' : 'var(--surface2)',
+        position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+        outline: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`,
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 4, width: 20, height: 20, borderRadius: '50%',
+        background: on ? '#0d0d1a' : 'var(--muted)',
+        transition: 'left 0.2s',
+        left: on ? 24 : 4,
+      }} />
+    </button>
   )
 }
