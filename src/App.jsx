@@ -7,6 +7,7 @@ import AuthScreen from './screens/AuthScreen'
 import HomeScreen from './screens/HomeScreen'
 import LobbyScreen from './screens/LobbyScreen'
 import GameScreen from './screens/GameScreen'
+import AvalonRulesScreen from './screens/AvalonRulesScreen'
 
 const ROOM_KEY = 'bg_room_id'
 
@@ -18,6 +19,10 @@ function saveRoom(id) {
 export default function App() {
   const [user, setUser] = useState(undefined)
   const [roomId, setRoomId] = useState(() => sessionStorage.getItem(ROOM_KEY))
+
+  if (window.location.pathname === '/rules') {
+    return <AvalonRulesScreen onBack={() => { window.history.pushState({}, '', '/'); window.location.reload() }} />
+  }
 
   useEffect(() => onAuthStateChanged(auth, async (u) => {
     if (!u) { setUser(null); return }

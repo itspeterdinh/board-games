@@ -64,6 +64,7 @@ export default function HomeScreen({ user, onJoin, onUserUpdated }) {
       <div className="header-row">
         <div className="screen-title" style={{ flex: 1 }}>⚔️ Board Games</div>
         {user.role === 'admin' && <button className="btn btn-ghost btn-small" onClick={() => setShowTest(true)} style={{ marginRight: 6 }}>🧪</button>}
+        <button className="btn btn-ghost btn-small" onClick={() => window.open('/rules', '_blank')} style={{ marginRight: 6 }}>📖</button>
         <button className="btn btn-ghost btn-small" onClick={() => setShowHistory(true)} style={{ marginRight: 6 }}>📜</button>
         <button className="btn btn-ghost btn-small" onClick={() => setShowProfile(true)} style={{ marginRight: 6 }}>
           {user.photoURL

@@ -101,6 +101,10 @@ export default function AuthScreen({ onAuth }) {
         <p style={styles.subtitle}>Play Avalon with friends</p>
       </div>
 
+      <div style={{ fontSize: '0.85rem', color: '#8888aa', textAlign: 'center' }}>
+        <a href="/rules" target="_blank" rel="noreferrer" style={{ color: '#c9a84c', textDecoration: 'none' }}>📖 How to play Avalon</a>
+      </div>
+
       <div style={styles.card}>
         <button style={styles.googleBtn} onClick={handleGoogle} disabled={loading}>
           <GoogleIcon />
