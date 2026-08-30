@@ -5,6 +5,7 @@ import {
   collection,
   setDoc,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -17,13 +18,21 @@ import {
   checkWerewolfWin,
 } from './werewolf';
 
+const IDLE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+
 function roomRef(id) {
   return doc(db, 'rooms', id);
 }
 
-// Stamps lastActivity on every room mutation, so idle rooms can be detected and cleaned up
+function idleExpiry() {
+  return Timestamp.fromMillis(Date.now() + IDLE_LIMIT_MS);
+}
+
+// Stamps lastActivity + expireAt on every room mutation.
+// expireAt drives a Firestore TTL policy that deletes the doc server-side —
+// this is what closes rooms even if every player backgrounds their phone.
 function updateRoom(roomId, data) {
-  return updateDoc(roomRef(roomId), { ...data, lastActivity: serverTimestamp() });
+  return updateDoc(roomRef(roomId), { ...data, lastActivity: serverTimestamp(), expireAt: idleExpiry() });
 }
 
 async function saveWerewolfHistory(room, winner) {
