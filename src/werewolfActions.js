@@ -21,6 +21,11 @@ function roomRef(id) {
   return doc(db, 'rooms', id);
 }
 
+// Stamps lastActivity on every room mutation, so idle rooms can be detected and cleaned up
+function updateRoom(roomId, data) {
+  return updateDoc(roomRef(roomId), { ...data, lastActivity: serverTimestamp() });
+}
+
 async function saveWerewolfHistory(room, winner) {
   const evilRoles = ['WEREWOLF'];
   const realPlayers = room.players.filter(
@@ -72,7 +77,7 @@ export async function startWerewolfGame(
   const alivePlayers = gamePlayers.map((p) => p.id);
   const nightPhase = getInitialNightPhase(roles, alivePlayers, 1);
 
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     game: 'werewolf',
     status: 'ww_roleReveal',
     roles,
@@ -166,14 +171,14 @@ async function advanceNightPhase(roomId, extraUpdate = {}) {
       nightDeathsRevealed: false,
       winner: winner || null,
     };
-    await updateDoc(roomRef(roomId), update);
+    await updateRoom(roomId, update);
   } else {
-    await updateDoc(roomRef(roomId), { ...extraUpdate, nightPhase: next });
+    await updateRoom(roomId, { ...extraUpdate, nightPhase: next });
   }
 }
 
 export async function startNightFromRoleReveal(roomId) {
-  await updateDoc(roomRef(roomId), { status: 'ww_night' })
+  await updateRoom(roomId, { status: 'ww_night' })
 }
 
 export async function submitCupidLovers(roomId, userId, [lover1, lover2]) {
@@ -182,7 +187,7 @@ export async function submitCupidLovers(roomId, userId, [lover1, lover2]) {
 
 export async function submitWolfVote(roomId, userId, targetId) {
   // Changing vote resets all confirmations so everyone must re-confirm
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     [`wolfVotes.${userId}`]: targetId,
     wolfConfirmed: {},
   });
@@ -213,7 +218,7 @@ export async function confirmWolfKill(roomId, userId) {
       wolfKillTarget: target,
     });
   } else {
-    await updateDoc(roomRef(roomId), { wolfConfirmed });
+    await updateRoom(roomId, { wolfConfirmed });
   }
 }
 
@@ -260,7 +265,7 @@ export async function forceAdvanceNightPhase(roomId) {
 // ── Day phase ────────────────────────────────────────────────────────────────
 
 export async function revealNightDeaths(roomId) {
-  await updateDoc(roomRef(roomId), { nightDeathsRevealed: true });
+  await updateRoom(roomId, { nightDeathsRevealed: true });
 }
 
 export async function advanceFromDayReveal(roomId) {
@@ -268,9 +273,9 @@ export async function advanceFromDayReveal(roomId) {
   const room = snap.data();
   if (room.winner) {
     await saveWerewolfHistory(room, room.winner);
-    await updateDoc(roomRef(roomId), { status: 'ended' });
+    await updateRoom(roomId, { status: 'ended' });
   } else {
-    await updateDoc(roomRef(roomId), {
+    await updateRoom(roomId, {
       status: 'ww_day',
       dayVotes: {},
       dayEliminated: null,
@@ -279,7 +284,7 @@ export async function advanceFromDayReveal(roomId) {
 }
 
 export async function startDayVoting(roomId) {
-  await updateDoc(roomRef(roomId), { status: 'ww_dayVote', dayVotes: {} });
+  await updateRoom(roomId, { status: 'ww_dayVote', dayVotes: {} });
 }
 
 export async function castDayVote(roomId, userId, targetId) {
@@ -386,14 +391,14 @@ export async function castDayVote(roomId, userId, targetId) {
       if (winner) {
         update.status = 'ended';
         update.winner = winner;
-        await updateDoc(roomRef(roomId), update);
+        await updateRoom(roomId, update);
         await saveWerewolfHistory({ ...room, ...update }, winner);
         return;
       }
     }
   }
 
-  await updateDoc(roomRef(roomId), update);
+  await updateRoom(roomId, update);
 }
 
 export async function advanceFromDayResult(roomId) {
@@ -407,7 +412,7 @@ export async function advanceFromDayResult(roomId) {
     room.alivePlayers,
     nextRound,
   );
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     status: 'ww_night',
     round: nextRound,
     nightPhase,
@@ -485,6 +490,6 @@ export async function submitHunterShot(roomId, hunterId, targetId) {
     }
   }
 
-  await updateDoc(roomRef(roomId), update);
+  await updateRoom(roomId, update);
   if (winner) await saveWerewolfHistory({ ...room, ...update }, winner);
 }

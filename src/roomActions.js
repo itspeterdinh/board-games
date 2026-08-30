@@ -7,6 +7,11 @@ import { assignRoles, buildNightInfo, questPassed } from './avalon'
 
 function roomRef(roomId) { return doc(db, 'rooms', roomId) }
 
+// Stamps lastActivity on every room mutation, so idle rooms can be detected and cleaned up
+function updateRoom(roomId, data) {
+  return updateDoc(roomRef(roomId), { ...data, lastActivity: serverTimestamp() })
+}
+
 async function saveGameHistory(room, winner) {
   const evilRoles = ['ASSASSIN','MORGANA','MORDRED','OBERON','MINION']
   const realPlayers = room.players.filter(p => !p.isBot)
@@ -48,6 +53,7 @@ export async function createRoom(user, roomName, password, gameType = 'avalon') 
     gameType,
     status: 'lobby',
     createdAt: serverTimestamp(),
+    lastActivity: serverTimestamp(),
   })
   return id
 }
@@ -60,7 +66,7 @@ export async function joinRoom(user, roomId, password) {
   if (room.status !== 'lobby') throw new Error('Game already started')
   const alreadyIn = room.players.some(p => p.id === user.uid)
   if (!alreadyIn) {
-    await updateDoc(roomRef(roomId), {
+    await updateRoom(roomId, {
       players: arrayUnion({ id: user.uid, displayName: user.displayName, photoURL: user.photoURL || null }),
     })
   }
@@ -74,7 +80,7 @@ export async function leaveRoom(user, roomId) {
   if (players.length === 0 || room.hostId === user.uid) {
     await deleteDoc(roomRef(roomId))
   } else {
-    await updateDoc(roomRef(roomId), { players })
+    await updateRoom(roomId, { players })
   }
 }
 
@@ -95,7 +101,7 @@ export async function startGame(roomId, selectedOptionalRoles) {
     ...players.slice(0, startIdx),
   ].map(p => p.id)
 
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     game: 'avalon',
     status: 'night',
     roles,
@@ -124,11 +130,11 @@ export async function readyForDay(roomId, userId) {
     update.status = 'propose'
     update.nightReady = []
   }
-  await updateDoc(roomRef(roomId), update)
+  await updateRoom(roomId, update)
 }
 
 export async function proposeTeam(roomId, teamPlayerIds) {
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     team: teamPlayerIds,
     status: 'vote',
     votes: {},
@@ -149,7 +155,7 @@ export async function castVote(roomId, userId, approve) {
     update.voteApprovals = approvals
     update.votePassed = majority
   }
-  await updateDoc(roomRef(roomId), update)
+  await updateRoom(roomId, update)
 }
 
 export async function advanceFromVoteResult(roomId) {
@@ -177,7 +183,7 @@ export async function advanceFromVoteResult(roomId) {
       update.leader = room.leaderOrder[nextIdx]
     }
   }
-  await updateDoc(roomRef(roomId), update)
+  await updateRoom(roomId, update)
 }
 
 export async function playMissionCard(roomId, userId, card) {
@@ -195,7 +201,7 @@ export async function playMissionCard(roomId, userId, card) {
     update.revealCards = shuffledCards
     update.status = 'result'
   }
-  await updateDoc(roomRef(roomId), update)
+  await updateRoom(roomId, update)
 }
 
 export async function advanceFromResult(roomId) {
@@ -228,7 +234,7 @@ export async function advanceFromResult(roomId) {
     update.leaderIndex = nextIdx
     update.leader = room.leaderOrder[nextIdx]
   }
-  await updateDoc(roomRef(roomId), update)
+  await updateRoom(roomId, update)
 }
 
 export async function assassinate(roomId, targetId) {
@@ -237,7 +243,7 @@ export async function assassinate(roomId, targetId) {
   const merlinId = Object.entries(room.roles).find(([, r]) => r === 'MERLIN')?.[0]
   const winner = targetId === merlinId ? 'evil' : 'good'
   await saveGameHistory({ ...room, assassinTarget: targetId }, winner)
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     assassinTarget: targetId,
     status: 'ended',
     winner,
@@ -245,23 +251,23 @@ export async function assassinate(roomId, targetId) {
 }
 
 export async function setShowLeaderOrder(roomId, value) {
-  await updateDoc(roomRef(roomId), { showLeaderOrder: value })
+  await updateRoom(roomId, { showLeaderOrder: value })
 }
 
 export async function setHostProposesTeam(roomId, value) {
-  await updateDoc(roomRef(roomId), { hostProposesTeam: value })
+  await updateRoom(roomId, { hostProposesTeam: value })
 }
 
 export async function setWitchSeesKill(roomId, value) {
-  await updateDoc(roomRef(roomId), { witchSeesKill: value })
+  await updateRoom(roomId, { witchSeesKill: value })
 }
 
 export async function setDoctorBlocksPoison(roomId, value) {
-  await updateDoc(roomRef(roomId), { doctorBlocksPoison: value })
+  await updateRoom(roomId, { doctorBlocksPoison: value })
 }
 
 export async function resetToLobby(roomId) {
-  await updateDoc(roomRef(roomId), {
+  await updateRoom(roomId, {
     game: null,
     status: 'lobby',
     roles: null,
